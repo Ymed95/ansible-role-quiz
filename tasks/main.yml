@@ -1,0 +1,55 @@
+---
+- name: Mettre à jour les paquets (Debian)
+  ansible.builtin.apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Mettre à jour les paquets (RedHat)
+  ansible.builtin.yum:
+    update_cache: yes
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Installer git
+  ansible.builtin.package:
+    name: git
+    state: present
+
+- name: Installer Node.js sur Debian
+  ansible.builtin.shell: |
+    curl -fsSL https://rpm.nodesource.com/setup_23.x | bash - &&
+    apt install -y nodejs
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Installer Node.js sur RedHat
+  ansible.builtin.shell: |
+    curl -fsSL https://rpm.nodesource.com/setup_23.x | bash - &&
+    dnf install -y nodejs
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Cloner le dépôt quiz-ansible
+  ansible.builtin.git:
+    repo: https://github.com/franklin-tutorials/quiz-ansible.git
+    dest: /opt/quiz-ansible
+
+- name: Installer les dépendances
+  ansible.builtin.shell: npm install
+  args:
+    chdir: /opt/quiz-ansible
+
+- name: Compiler l'app
+  ansible.builtin.shell: npm run build
+  args:
+    chdir: /opt/quiz-ansible
+
+- name: Lancer en mode global
+  ansible.builtin.shell: npm install -g serve
+  args:
+    chdir: /opt/quiz-ansible
+
+- name: Lancer l'app
+  ansible.builtin.shell: serve -s dist
+  args:
+    chdir: /opt/quiz-ansible
+    executable: /bin/bash
+    creates: /opt/quiz-ansible/dist
+
